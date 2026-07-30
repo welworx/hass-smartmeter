@@ -23,6 +23,11 @@ Early scaffolding — repo structure, manifest, and file layout are in place;
 config flow, the coordinator, and statistics import are not yet
 implemented.
 
+The HACS validation workflow's `brands` check is expected to fail until this
+is submitted to the [home-assistant/brands](https://github.com/home-assistant/brands)
+repository — that's only required for listing in the HACS default store, not
+for installing via HACS as a custom repository.
+
 ## Requirements
 
 A running [smartmeter-fetch](https://github.com/welworx/smartmeter-fetch)
