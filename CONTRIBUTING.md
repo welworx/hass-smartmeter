@@ -8,6 +8,9 @@ disclaimer](README.md)), but fixes and improvements are welcome.
 1. `hassfest` and HACS validation pass (see `.github/workflows/validate.yml`)
 2. Code is linted: `ruff check .`
 
+Run `pre-commit install` once to check both automatically on every commit,
+or `pre-commit run --all-files` to check everything by hand.
+
 ## Scope
 
 This integration only ever talks to a
