@@ -23,10 +23,12 @@ Early scaffolding — repo structure, manifest, and file layout are in place;
 config flow, the coordinator, and statistics import are not yet
 implemented.
 
-The HACS validation workflow's `brands` check is expected to fail until this
-is submitted to the [home-assistant/brands](https://github.com/home-assistant/brands)
-repository — that's only required for listing in the HACS default store, not
-for installing via HACS as a custom repository.
+**TODO:** submit brand assets (icon/logo) to
+[home-assistant/brands](https://github.com/home-assistant/brands) to be
+listed in the HACS default store. Until then, the HACS validation
+workflow's `brands` check is disabled (`ignore: brands` in
+`.github/workflows/validate.yml`) — that check isn't required for
+installing via HACS as a custom repository, only for the default store.
 
 ## Requirements
 

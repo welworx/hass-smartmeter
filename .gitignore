@@ -4,3 +4,8 @@ __pycache__/
 .vscode/
 .idea/
 .DS_Store
+
+# Local scratch and planning docs — working notes, not part of the
+# published repo.
+.superpowers/
+docs/superpowers/
