@@ -2,12 +2,16 @@
 
 import aiohttp
 import pytest
+from homeassistant import config_entries
+from homeassistant.data_entry_flow import FlowResultType
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.smartmeter.config_flow import (
     CannotConnect,
     NoPointsFound,
     _validate,
 )
+from custom_components.smartmeter.const import CONF_BASE_URL, DOMAIN
 
 BASE_URL = "http://smartmeter.local:8080"
 
@@ -53,3 +57,75 @@ async def test_validate_cannot_connect_on_non_2xx(hass, aioclient_mock):
 
     with pytest.raises(CannotConnect):
         await _validate(hass, BASE_URL)
+
+
+async def test_user_flow_shows_form(hass):
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+
+async def test_user_flow_success(hass, aioclient_mock):
+    aioclient_mock.get(
+        f"{BASE_URL}/v1/points", json=[{"id": "normal", "name": "Consumption"}]
+    )
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_BASE_URL: BASE_URL}
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == {CONF_BASE_URL: BASE_URL}
+
+
+async def test_user_flow_cannot_connect(hass, aioclient_mock):
+    aioclient_mock.get(f"{BASE_URL}/v1/points", exc=aiohttp.ClientError)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_BASE_URL: BASE_URL}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "cannot_connect"}
+
+
+async def test_user_flow_no_points_found(hass, aioclient_mock):
+    aioclient_mock.get(f"{BASE_URL}/v1/points", json=[])
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_BASE_URL: BASE_URL}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "no_points_found"}
+
+
+async def test_user_flow_already_configured(hass, aioclient_mock):
+    MockConfigEntry(
+        domain=DOMAIN, unique_id=DOMAIN, data={CONF_BASE_URL: BASE_URL}
+    ).add_to_hass(hass)
+    aioclient_mock.get(
+        f"{BASE_URL}/v1/points", json=[{"id": "normal", "name": "Consumption"}]
+    )
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_BASE_URL: BASE_URL}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"

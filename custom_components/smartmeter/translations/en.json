@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Enter the base URL of a running smartmeter-fetch instance.",
+        "data": {
+          "base_url": "Base URL"
+        }
+      },
+      "reconfigure": {
+        "description": "Update the base URL of your smartmeter-fetch instance.",
+        "data": {
+          "base_url": "Base URL"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to the smartmeter-fetch instance.",
+      "no_points_found": "No metering points were found on that smartmeter-fetch instance.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "A smartmeter-fetch instance is already configured.",
+      "reconfigure_successful": "Reconfiguration was successful."
+    }
+  }
+}
