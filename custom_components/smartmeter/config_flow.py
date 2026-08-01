@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any
 
 import aiohttp
 import voluptuous as vol
-
 from homeassistant.config_entries import ConfigFlow
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -70,10 +69,8 @@ class SmartmeterConfigFlow(ConfigFlow, domain=DOMAIN):
             errors["base"] = "cannot_connect"
         except NoPointsFound:
             errors["base"] = "no_points_found"
-        except Exception:  # noqa: BLE001 — anything unanticipated maps to "unknown"
-            _LOGGER.exception(
-                "Unexpected error validating smartmeter-fetch connection"
-            )
+        except Exception:
+            _LOGGER.exception("Unexpected error validating smartmeter-fetch connection")
             errors["base"] = "unknown"
 
         if errors:
@@ -85,8 +82,9 @@ class SmartmeterConfigFlow(ConfigFlow, domain=DOMAIN):
         data = {CONF_BASE_URL: user_input[CONF_BASE_URL].rstrip("/")}
 
         if reconfigure:
+            entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
             return self.async_update_reload_and_abort(
-                self._get_reconfigure_entry(), data=data
+                entry, data=data, reason="reconfigure_successful"
             )
 
         await self.async_set_unique_id(DOMAIN)
@@ -102,3 +100,13 @@ class SmartmeterConfigFlow(ConfigFlow, domain=DOMAIN):
                 step_id="user", data_schema=STEP_USER_DATA_SCHEMA
             )
         return await self._validate_and_finish(user_input, reconfigure=False)
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle reconfiguring an existing entry's base URL."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="reconfigure", data_schema=STEP_USER_DATA_SCHEMA
+            )
+        return await self._validate_and_finish(user_input, reconfigure=True)

@@ -129,3 +129,44 @@ async def test_user_flow_already_configured(hass, aioclient_mock):
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
+
+
+async def test_reconfigure_flow_updates_base_url(hass, aioclient_mock):
+    entry = MockConfigEntry(
+        domain=DOMAIN, unique_id=DOMAIN, data={CONF_BASE_URL: BASE_URL}
+    )
+    entry.add_to_hass(hass)
+
+    new_url = "http://smartmeter.local:9090"
+    aioclient_mock.get(
+        f"{new_url}/v1/points", json=[{"id": "normal", "name": "Consumption"}]
+    )
+
+    result = await entry.start_reconfigure_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_BASE_URL: new_url}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data == {CONF_BASE_URL: new_url}
+
+
+async def test_reconfigure_flow_cannot_connect(hass, aioclient_mock):
+    entry = MockConfigEntry(
+        domain=DOMAIN, unique_id=DOMAIN, data={CONF_BASE_URL: BASE_URL}
+    )
+    entry.add_to_hass(hass)
+    aioclient_mock.get(f"{BASE_URL}/v1/points", exc=aiohttp.ClientError)
+
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_BASE_URL: BASE_URL}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "cannot_connect"}
+    assert entry.data == {CONF_BASE_URL: BASE_URL}
