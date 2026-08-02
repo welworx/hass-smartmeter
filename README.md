@@ -19,24 +19,45 @@ smartmeter-fetch is configured with.
 
 ## Status
 
-Early scaffolding — repo structure, manifest, and file layout are in place;
-config flow, the coordinator, and statistics import are not yet
-implemented.
+Config flow, the coordinator, and statistics import are implemented:
+setting up the integration discovers metering points from a running
+smartmeter-fetch instance and imports readings into the Energy dashboard
+as long-term statistics, one stream per point.
 
-**TODO:** submit brand assets (icon/logo) to
-[home-assistant/brands](https://github.com/home-assistant/brands) to be
-listed in the HACS default store. Until then, the HACS validation
-workflow's `brands` check is disabled (`ignore: brands` in
-`.github/workflows/validate.yml`) — that check isn't required for
-installing via HACS as a custom repository, only for the default store.
+Not in the HACS default store yet — install via HACS as a custom
+repository, or manually (see Installation below). Two things are still
+needed before a default-store submission:
+
+- **A GitHub release.** HACS uses release tags to offer version selection;
+  none has been cut yet.
+- **Brand assets** (icon/logo) submitted to
+  [home-assistant/brands](https://github.com/home-assistant/brands) —
+  required for the default store, not for a custom-repository install.
+  Until this lands, the HACS validation workflow's `brands` check stays
+  disabled (`ignore: brands` in `.github/workflows/validate.yml`).
+
+(The repository description, topics, and issue tracker HACS also checks
+for are already in place.)
 
 ## Requirements
 
 A running [smartmeter-fetch](https://github.com/welworx/smartmeter-fetch)
 instance reachable from Home Assistant.
 
-## Installation (once implemented)
+## Installation
 
-Via [HACS](https://hacs.xyz/) as a custom repository, or by copying
-`custom_components/smartmeter` into your Home Assistant `custom_components`
-directory.
+**Via [HACS](https://hacs.xyz/) (custom repository):**
+
+1. HACS → the "⋮" menu → **Custom repositories**
+2. Add `https://github.com/welworx/hass-smartmeter`, category **Integration**
+3. Find "Smartmeter" in HACS and install it, then restart Home Assistant
+
+**Manually:** no `git clone` needed — download the repository as a ZIP
+(GitHub's **Code → Download ZIP**, or a release archive once one exists)
+and copy the `custom_components/smartmeter` folder into your Home
+Assistant config's `custom_components/` directory (creating it if it
+doesn't exist yet), then restart Home Assistant.
+
+Either way, finish setup under **Settings → Devices & Services → Add
+Integration → Smartmeter**, entering your smartmeter-fetch instance's base
+URL.
