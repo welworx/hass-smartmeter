@@ -20,8 +20,7 @@ STATISTIC_ID = "smartmeter:evn_at001"
 
 def test_statistic_id_for_slugs_provider_and_id():
     assert (
-        statistic_id_for({"provider": "EVN", "id": "AT-001"})
-        == "smartmeter:evn_at_001"
+        statistic_id_for({"provider": "EVN", "id": "AT-001"}) == "smartmeter:evn_at_001"
     )
 
 
@@ -69,10 +68,53 @@ async def test_import_statistics_recomputes_last_bucket_on_correction(
     assert [r["sum"] for r in rows] == [130.0, 150.0]
 
 
-async def test_import_statistics_skips_point_with_no_new_readings(
-    recorder_mock, hass
-):
+async def test_import_statistics_skips_point_with_no_new_readings(recorder_mock, hass):
     await async_import_statistics(hass, {STATISTIC_ID: (POINT, [])})
     await async_wait_recording_done(hass)
 
     assert await async_last_reading_timestamp(hass, STATISTIC_ID) is None
+
+
+async def test_import_statistics_isolates_broken_point(recorder_mock, hass):
+    broken_point = {"provider": "evn", "id": "AT002"}
+    broken_statistic_id = "smartmeter:evn_at002"
+
+    healthy_readings = [
+        {"timestamp": "2026-01-01T00:15:00Z", "value": 100.0},
+    ]
+
+    # Missing "value" key raises a KeyError during bucketing — a per-point
+    # failure Fix 4's try/except must isolate from the healthy point below.
+    broken_readings = [{"timestamp": "2026-01-01T00:15:00Z"}]
+
+    await async_import_statistics(
+        hass,
+        {
+            broken_statistic_id: (broken_point, broken_readings),
+            STATISTIC_ID: (POINT, healthy_readings),
+        },
+    )
+    await async_wait_recording_done(hass)
+
+    assert await async_last_reading_timestamp(hass, broken_statistic_id) is None
+    assert await async_last_reading_timestamp(hass, STATISTIC_ID) == datetime(
+        2026, 1, 1, 0, tzinfo=UTC
+    )
+
+
+async def test_bucket_to_hour_skips_unparseable_timestamp(recorder_mock, hass):
+    readings = [
+        {"timestamp": "not-a-timestamp", "value": 999.0},
+        {"timestamp": "2026-01-01T00:15:00Z", "value": 100.0},
+        {"timestamp": "2026-01-01T00:45:00Z", "value": 50.0},
+    ]
+
+    await async_import_statistics(hass, {STATISTIC_ID: (POINT, readings)})
+    await async_wait_recording_done(hass)
+
+    result = await get_instance(hass).async_add_executor_job(
+        get_last_statistics, hass, 1, STATISTIC_ID, True, {"state", "sum"}
+    )
+    rows = result[STATISTIC_ID]
+    assert rows[0]["state"] == 150.0
+    assert rows[0]["sum"] == 150.0

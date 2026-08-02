@@ -9,6 +9,7 @@ gets its own statistic stream.
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from datetime import datetime
 from typing import TYPE_CHECKING, TypedDict
@@ -29,6 +30,8 @@ from .const import DOMAIN
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class PointRef(TypedDict):
@@ -72,33 +75,43 @@ async def async_import_statistics(
         if not readings:
             continue
 
-        buckets = _bucket_to_hour(readings)
+        try:
+            buckets = _bucket_to_hour(readings)
 
-        last = await get_instance(hass).async_add_executor_job(
-            get_last_statistics, hass, 1, statistic_id, True, {"state", "sum"}
-        )
-        rows = last.get(statistic_id)
-        running_sum = rows[0]["sum"] - rows[0]["state"] if rows else 0.0
-
-        stats: list[StatisticData] = []
-        for hour_start in sorted(buckets):
-            running_sum += buckets[hour_start]
-            stats.append(
-                StatisticData(
-                    start=hour_start, state=buckets[hour_start], sum=running_sum
-                )
+            last = await get_instance(hass).async_add_executor_job(
+                get_last_statistics, hass, 1, statistic_id, True, {"state", "sum"}
             )
+            rows = last.get(statistic_id)
+            # smartmeter-fetch's `since` is inclusive, so `readings` may re-include
+            # the last-imported bucket — subtract its own contribution back out
+            # before re-adding the (possibly corrected) bucket below.
+            running_sum = rows[0]["sum"] - rows[0]["state"] if rows else 0.0
 
-        metadata = StatisticMetaData(
-            mean_type=StatisticMeanType.NONE,
-            has_sum=True,
-            name=f"{point['provider']} {point['id']}",
-            source=DOMAIN,
-            statistic_id=statistic_id,
-            unit_class=EnergyConverter.UNIT_CLASS,
-            unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        )
-        async_add_external_statistics(hass, metadata, stats)
+            stats: list[StatisticData] = []
+            for hour_start in sorted(buckets):
+                running_sum += buckets[hour_start]
+                stats.append(
+                    StatisticData(
+                        start=hour_start, state=buckets[hour_start], sum=running_sum
+                    )
+                )
+
+            metadata = StatisticMetaData(
+                mean_type=StatisticMeanType.NONE,
+                has_sum=True,
+                name=f"{point['provider']} {point['id']}",
+                source=DOMAIN,
+                statistic_id=statistic_id,
+                unit_class=EnergyConverter.UNIT_CLASS,
+                unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+            )
+            async_add_external_statistics(hass, metadata, stats)
+        except Exception:
+            _LOGGER.exception(
+                "Skipping statistics import for point %s (%s) this cycle",
+                point["id"],
+                point["provider"],
+            )
 
 
 def _bucket_to_hour(readings: list[Reading]) -> dict[datetime, float]:
@@ -106,6 +119,14 @@ def _bucket_to_hour(readings: list[Reading]) -> dict[datetime, float]:
     buckets: dict[datetime, float] = defaultdict(float)
     for reading in readings:
         timestamp = dt_util.parse_datetime(reading["timestamp"])
-        hour_start = timestamp.replace(minute=0, second=0, microsecond=0)
+        if timestamp is None:
+            _LOGGER.warning(
+                "Skipping reading with unparseable timestamp: %r",
+                reading["timestamp"],
+            )
+            continue
+        hour_start = dt_util.as_utc(timestamp).replace(
+            minute=0, second=0, microsecond=0
+        )
         buckets[hour_start] += reading["value"]
     return dict(buckets)

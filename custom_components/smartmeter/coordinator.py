@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=10)
+READINGS_TIMEOUT = aiohttp.ClientTimeout(sock_connect=10, sock_read=30, total=300)
 
 type SmartmeterConfigEntry = ConfigEntry[SmartmeterDataUpdateCoordinator]
 type SmartmeterData = dict[str, tuple[PointRef, list[Reading]]]
@@ -99,7 +100,7 @@ class SmartmeterDataUpdateCoordinator(DataUpdateCoordinator[SmartmeterData]):
 
         session = async_get_clientsession(self.hass)
         async with session.get(
-            f"{self.base_url}/v1/readings", params=params, timeout=REQUEST_TIMEOUT
+            f"{self.base_url}/v1/readings", params=params, timeout=READINGS_TIMEOUT
         ) as response:
             response.raise_for_status()
             return await response.json()

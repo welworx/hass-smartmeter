@@ -39,7 +39,9 @@ async def test_setup_entry_creates_last_update_sensor(
     assert state.state != "unknown"
 
 
-async def test_unload_entry(recorder_mock, hass, enable_custom_integrations, aioclient_mock):
+async def test_unload_entry(
+    recorder_mock, hass, enable_custom_integrations, aioclient_mock
+):
     aioclient_mock.get(f"{BASE_URL}/v1/points", json=[])
     entry = MockConfigEntry(
         domain=DOMAIN, unique_id=DOMAIN, data={CONF_BASE_URL: BASE_URL}
