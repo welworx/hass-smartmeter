@@ -29,8 +29,9 @@ repository, or manually (see Installation below).
 
 ## TODO: HACS default store
 
-- [ ] Cut a GitHub release — HACS uses release tags for version
-      selection; none exists yet.
+- [x] Cut a GitHub release — HACS uses release tags for version
+      selection. [`v0.1.0`](https://github.com/welworx/hass-smartmeter/releases/tag/v0.1.0)
+      is out.
 - [ ] Submit brand assets (icon/logo) to
       [home-assistant/brands](https://github.com/home-assistant/brands) —
       required for the default store, not for a custom-repository
