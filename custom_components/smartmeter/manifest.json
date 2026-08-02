@@ -3,6 +3,7 @@
   "name": "Smartmeter",
   "codeowners": ["@welworx"],
   "config_flow": true,
+  "dependencies": ["recorder"],
   "documentation": "https://github.com/welworx/hass-smartmeter",
   "integration_type": "hub",
   "iot_class": "local_polling",
