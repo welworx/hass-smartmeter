@@ -29,8 +29,8 @@ repository, or manually (see Installation below).
 
 ## TODO: HACS default store
 
-- [ ] Cut a GitHub release — HACS uses release tags for version
-      selection; none exists yet.
+- [x] Cut a GitHub release — HACS uses release tags for version
+      selection; `v0.1.0` is published.
 - [ ] Submit brand assets (icon/logo) to
       [home-assistant/brands](https://github.com/home-assistant/brands) —
       required for the default store, not for a custom-repository
@@ -54,7 +54,8 @@ instance reachable from Home Assistant.
 3. Find "Smartmeter" in HACS and install it, then restart Home Assistant
 
 **Manually:** no `git clone` needed — download the repository as a ZIP
-(GitHub's **Code → Download ZIP**, or a release archive once one exists)
+(GitHub's **Code → Download ZIP**, or a
+[release archive](https://github.com/welworx/hass-smartmeter/releases))
 and copy the `custom_components/smartmeter` folder into your Home
 Assistant config's `custom_components/` directory (creating it if it
 doesn't exist yet), then restart Home Assistant.

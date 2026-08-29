@@ -1,5 +1,7 @@
 """Tests for the Smartmeter config flow."""
 
+from unittest.mock import patch
+
 import aiohttp
 import pytest
 from homeassistant import config_entries
@@ -124,6 +126,24 @@ async def test_user_flow_no_points_found(
 
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "no_points_found"}
+
+
+async def test_user_flow_unknown_error(
+    recorder_mock, hass, enable_custom_integrations
+):
+    with patch(
+        "custom_components.smartmeter.config_flow._validate",
+        side_effect=RuntimeError("boom"),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_BASE_URL: BASE_URL}
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "unknown"}
 
 
 async def test_user_flow_already_configured(
