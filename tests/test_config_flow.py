@@ -128,9 +128,7 @@ async def test_user_flow_no_points_found(
     assert result["errors"] == {"base": "no_points_found"}
 
 
-async def test_user_flow_unknown_error(
-    recorder_mock, hass, enable_custom_integrations
-):
+async def test_user_flow_unknown_error(recorder_mock, hass, enable_custom_integrations):
     with patch(
         "custom_components.smartmeter.config_flow._validate",
         side_effect=RuntimeError("boom"),
